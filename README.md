@@ -22,7 +22,7 @@ workflows over an RC522 transport.
 
 1. Read [`lib/desfire/README.md`](lib/desfire/README.md).
 2. Open [`examples/c_desfire_demo/main.c`](examples/c_desfire_demo/main.c).
-3. Implement the `transceive` callback for your NFC stack.
+3. Implement the `platform_*` hooks in that example for your RC522 driver.
 4. Use the wrappers:
    - `df_setup_desfire()`
    - `df_setup_dna()`
@@ -38,6 +38,13 @@ workflows over an RC522 transport.
 - For a plain-C RC522 backend, see the notes in `ports/libdriver_mfrc522/`.
 - The RC522 adapter is intentionally generic so you can bind any plain-C
   driver into the same DESFire core.
+- The main example runs the full loop:
+  - wait for card
+  - activate RC522 transport
+  - provision DESFire
+  - write/read a file
+  - provision DNA
+  - blank DNA payload
 
 ## Publishing
 
