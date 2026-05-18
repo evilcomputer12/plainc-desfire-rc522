@@ -7,6 +7,17 @@
 #include "../../lib/desfire/desfire_cmd.h"
 #include "../../ports/libdriver_mfrc522/rc522_port.h"
 
+#if defined(__has_include)
+#if __has_include("driver_mfrc522_basic.h")
+#include "driver_mfrc522_basic.h"
+#define HAVE_LIBDRIVER_MFRC522 1
+#endif
+#endif
+
+#ifndef HAVE_LIBDRIVER_MFRC522
+#define HAVE_LIBDRIVER_MFRC522 0
+#endif
+
 /*
  * Plain-C DESFire + RC522 end-to-end example
  *
@@ -59,25 +70,53 @@ static void log_hex_bytes(const char *prefix, const uint8_t *buf, size_t len) {
 }
 
 static bool platform_card_present(void *user) {
-    (void)user;
-    /*
-     * Replace with your card-present read from the RC522 driver.
-     * Return true when a tag is in field.
-     */
+    AppState *app = (AppState *)user;
+    uint8_t probe[] = { 0x90, 0x60, 0x00, 0x00, 0x00 };
+    uint8_t resp[32];
+    uint8_t out_len = 0;
+
+    if (!app) {
+        return false;
+    }
+
+#if HAVE_LIBDRIVER_MFRC522
+    if (mfrc522_basic_transceiver(probe, (uint8_t)sizeof(probe), resp, &out_len) == 0 &&
+        out_len >= 2 &&
+        resp[out_len - 2] == 0x91) {
+        return true;
+    }
+#else
+    (void)probe;
+    (void)resp;
+    (void)out_len;
+#endif
     return false;
 }
 
 static DFStatus platform_activate_card(void *user) {
-    (void)user;
-    /*
-     * Replace with:
-     *   - REQA / anticollision
-     *   - select
-     *   - RATS
-     *   - ISO14443-4 activation
-     *   - any driver-specific state initialization
-     */
+    AppState *app = (AppState *)user;
+    uint8_t probe[] = { 0x90, 0x60, 0x00, 0x00, 0x00 };
+    uint8_t resp[32];
+    uint8_t out_len = 0;
+
+    if (!app) {
+        return DF_ERR_PARAM;
+    }
+
+#if HAVE_LIBDRIVER_MFRC522
+    if (mfrc522_basic_transceiver(probe, (uint8_t)sizeof(probe), resp, &out_len) != 0) {
+        return DF_ERR_TRANSCEIVE;
+    }
+    if (out_len < 2 || resp[out_len - 2] != 0x91) {
+        return DF_ERR_TRANSCEIVE;
+    }
+    return DF_OK;
+#else
+    (void)probe;
+    (void)resp;
+    (void)out_len;
     return DF_ERR_TRANSCEIVE;
+#endif
 }
 
 static DFStatus platform_send_apdu(void *user,
@@ -86,16 +125,18 @@ static DFStatus platform_send_apdu(void *user,
                                    uint8_t *rx,
                                    uint8_t *rx_len) {
     (void)user;
+#if HAVE_LIBDRIVER_MFRC522
+    if (mfrc522_basic_transceiver((uint8_t *)tx, tx_len, rx, rx_len) != 0) {
+        return DF_ERR_TRANSCEIVE;
+    }
+    return DF_OK;
+#else
     (void)tx;
     (void)tx_len;
     (void)rx;
     (void)rx_len;
-    /*
-     * Replace with your RC522 transceive path.
-     * This function should send a DESFire ISO14443-4 APDU and return the
-     * response bytes exactly as received from the card.
-     */
     return DF_ERR_TRANSCEIVE;
+#endif
 }
 
 static void platform_sleep_ms(void *user, uint32_t ms) {
@@ -108,10 +149,19 @@ static void platform_sleep_ms(void *user, uint32_t ms) {
 
 static void platform_random(void *user, uint8_t *buf, size_t len) {
     (void)user;
-    /*
-     * Replace with hardware entropy if available.
-     * This fallback is only for the example.
-     */
+#if HAVE_LIBDRIVER_MFRC522
+    {
+        uint8_t tmp[25];
+        if (mfrc522_basic_generate_random(tmp) == 0) {
+            size_t copy_len = len < sizeof(tmp) ? len : sizeof(tmp);
+            memcpy(buf, tmp, copy_len);
+            if (copy_len < len) {
+                memset(buf + copy_len, 0, len - copy_len);
+            }
+            return;
+        }
+    }
+#endif
     for (size_t i = 0; i < len; i++) {
         buf[i] = (uint8_t)(0xA5u ^ (uint8_t)(i * 17u));
     }
@@ -131,6 +181,12 @@ static void platform_log(const char *label, const char *apdu_hex,
 }
 
 static void app_init(AppState *app) {
+#if HAVE_LIBDRIVER_MFRC522
+    if (mfrc522_basic_init(MFRC522_INTERFACE_SPI, 0x00, NULL) != 0) {
+        app->initialized = false;
+        return;
+    }
+#endif
     rc522_port_ops_t ops = {
         .user = app->driver,
         .present = platform_card_present,

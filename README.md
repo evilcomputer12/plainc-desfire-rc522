@@ -35,6 +35,8 @@ workflows over an RC522 transport.
 
 - The repository is intentionally plain C.
 - The DESFire core is callback-driven and does not depend on Arduino.
+- The example uses LibDriver MFRC522 automatically when
+  `driver_mfrc522_basic.h` is available.
 - For a plain-C RC522 backend, see the notes in `ports/libdriver_mfrc522/`.
 - The RC522 adapter is intentionally generic so you can bind any plain-C
   driver into the same DESFire core.
