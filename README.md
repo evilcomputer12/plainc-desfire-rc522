@@ -35,6 +35,9 @@ workflows over an RC522 transport.
 
 - The repository is intentionally plain C.
 - The DESFire core is callback-driven and does not depend on Arduino.
+- The default backend choice is LibDriver MFRC522 because it has the cleanest
+  documented plain-C init/transceiver API for APDU exchange and card
+  presence probing.
 - The example uses LibDriver MFRC522 automatically when
   `driver_mfrc522_basic.h` is available.
 - For a plain-C RC522 backend, see the notes in `ports/libdriver_mfrc522/`.
@@ -47,6 +50,19 @@ workflows over an RC522 transport.
   - write/read a file
   - provision DNA
   - blank DNA payload
+
+## Why LibDriver
+
+The LibDriver MFRC522 package is the most practical plain-C fit here because
+it already exposes:
+
+- a documented basic init function
+- a documented transceiver function
+- a documented random generator helper
+- a platform interface layer that can be filled in by the MCU project
+
+That makes it the easiest path for a card-present probe plus ISO14443-4 APDU
+transport in a pure C project.
 
 ## Publishing
 

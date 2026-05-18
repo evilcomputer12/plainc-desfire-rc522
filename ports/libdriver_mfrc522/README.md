@@ -14,6 +14,18 @@ usually already have a plain-C NFC stack or a driver layer for RC522. This
 adapter lets you keep that code separate from the DESFire crypto and command
 logic.
 
+## Backend choice
+
+This repo treats LibDriver MFRC522 as the preferred backend when you want the
+lowest-friction plain-C setup for:
+
+- card presence probing
+- transceiver/APDU exchange
+- random generation helper support
+
+Other RC522 C libraries may still work, but they need an adapter that matches
+the `rc522_port_t` contract.
+
 ## Adapter contract
 
 The adapter exposes four hooks:
