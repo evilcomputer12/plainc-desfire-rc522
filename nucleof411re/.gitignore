@@ -1,0 +1,8 @@
+build/
+mx.scratch
+!.settings
+.venv-serial/
+STM32F1-CLRC663-master/
+scripts/last_setup.log
+*.pdf
+.DS_Store

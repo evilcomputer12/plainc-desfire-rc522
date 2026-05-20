@@ -168,8 +168,11 @@ DFStatus df_setup_dna(DFContext *ctx,
                       uint8_t fileNo,
                       uint16_t fileAccessRights);
 
-/* Status word → human readable */
+/* Status word → human readable (card SW2 byte) */
 const char *df_sw_describe(uint8_t sw);
+
+/* DFStatus code → human readable */
+const char *df_status_describe(DFStatus st);
 
 #ifdef __cplusplus
 }
